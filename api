@@ -1,0 +1,46 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+import faiss, pickle
+from sentence_transformers import SentenceTransformer
+
+app = FastAPI(title="SHL Recommendation API")
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+index = faiss.read_index("data/faiss.index")
+
+with open("data/metadata.pkl", "rb") as f:
+    metadata = pickle.load(f)
+
+class Query(BaseModel):
+    query: str
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.post("/recommend")
+def recommend(data: Query):
+    q_emb = model.encode([data.query])
+    _, ids = index.search(q_emb, 20)
+
+    results = []
+    k_count = p_count = 0
+
+    for i in ids[0]:
+        item = metadata[i]
+        if item["test_type"] == "K" and k_count < 5:
+            results.append(item)
+            k_count += 1
+        elif item["test_type"] == "P" and p_count < 5:
+            results.append(item)
+            p_count += 1
+        if len(results) == 10:
+            break
+
+    return [
+        {
+            "assessment_name": r["assessment_name"],
+            "assessment_url": r["url"]
+        }
+        for r in results
+    ]
