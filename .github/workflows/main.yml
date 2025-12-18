@@ -1,4 +1,4 @@
-name: SHL GenAI CI Pipeline
+name: SHL Assessment Recommendation CI
 
 on:
   push:
@@ -11,46 +11,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run SHL crawler
-      run: |
-        python crawler
+      - name: Run SHL crawler
+        run: |
+          python crawler/crawl_shl.py
 
-    - name: Validate assessment count
-      run: |
-        python - <<EOF
-        import pandas as pd
-        df = pd.read_csv("data/shl_assessments.csv")
-        assert len(df) >= 377, f"Only {len(df)} assessments found"
-        print("Assessment count OK:", len(df))
-        EOF
+      - name: Check assessment count
+        run: |
+          python - <<EOF
+          import pandas as pd
+          df = pd.read_csv("data/shl_assessments.csv")
+          assert len(df) >= 377, f"Expected >=377 assessments, got {len(df)}"
+          print("Assessment count OK:", len(df))
+          EOF
 
-    - name: Build FAISS index
-      run: |
-        python embeddings
+      - name: Build embeddings and FAISS index
+        run: |
+          python embeddings/build_faiss_index.py
 
-    - name: Run API import test
-      run: |
-        python - <<EOF
-        from api.app import health
-        print(health())
-        EOF
+      - name: Validate FastAPI app import
+        run: |
+          python - <<EOF
+          from api.app import app
+          print("FastAPI app loaded successfully")
+          EOF
 
-    - name: Run Recall@10 evaluation
-      run: |
-        python evaluation
-
-    - name: CI Success
-      run: echo "✅ SHL GenAI Pipeline Passed"
+      - name: Run Recall@10 evaluation
+        run: |
+          python evaluation/recall_at_10.py
