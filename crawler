@@ -1,1 +1,42 @@
+import requests
+import pandas as pd
+from bs4 import BeautifulSoup
+
+BASE_URL = "https://www.shl.com"
+CATALOG_URL = "https://www.shl.com/solutions/products/product-catalog/"
+
+def crawl_shl():
+    res = requests.get(CATALOG_URL)
+    soup = BeautifulSoup(res.text, "html.parser")
+
+    records = []
+
+    for card in soup.select("a.product-card"):
+        title = card.select_one("h3")
+        desc = card.select_one("p")
+        tag = card.select_one(".product-tag")
+
+        if not title or not desc or not tag:
+            continue
+
+        if "Pre-packaged" in tag.text:
+            continue
+
+        url = BASE_URL + card["href"]
+        test_type = "P" if "Personality" in desc.text else "K"
+
+        records.append({
+            "assessment_name": title.text.strip(),
+            "description": desc.text.strip(),
+            "test_type": test_type,
+            "category": tag.text.strip(),
+            "url": url
+        })
+
+    df = pd.DataFrame(records)
+    df.to_csv("data/shl_assessments.csv", index=False)
+    print(f"Saved {len(df)} assessments")
+
+if __name__ == "__main__":
+    crawl_shl()
 
