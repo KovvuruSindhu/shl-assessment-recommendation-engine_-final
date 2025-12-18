@@ -26,7 +26,7 @@ jobs:
 
       - name: Run SHL crawler
         run: |
-          python crawler/crawl_shl.py
+          python crawler
 
       - name: Check assessment count
         run: |
@@ -39,7 +39,7 @@ jobs:
 
       - name: Build embeddings and FAISS index
         run: |
-          python embeddings/build_faiss_index.py
+          python embeddings
 
       - name: Validate FastAPI app import
         run: |
