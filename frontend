@@ -1,0 +1,13 @@
+import streamlit as st
+import requests
+
+API_URL = "https://your-api-url/recommend"
+
+st.title("SHL Assessment Recommender")
+
+query = st.text_area("Enter Job Description or Query")
+
+if st.button("Recommend"):
+    res = requests.post(API_URL, json={"query": query})
+    for r in res.json():
+        st.write(f"- [{r['assessment_name']}]({r['assessment_url']})")
