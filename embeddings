@@ -1,0 +1,27 @@
+import pandas as pd
+import faiss
+import pickle
+from sentence_transformers import SentenceTransformer
+
+df = pd.read_csv("data/shl_assessments.csv")
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+texts = (
+    df["assessment_name"] + " " +
+    df["description"] + " " +
+    df["category"] + " " +
+    df["test_type"]
+).tolist()
+
+embeddings = model.encode(texts, show_progress_bar=True)
+
+index = faiss.IndexFlatL2(embeddings.shape[1])
+index.add(embeddings)
+
+faiss.write_index(index, "data/faiss.index")
+
+with open("data/metadata.pkl", "wb") as f:
+    pickle.dump(df.to_dict(orient="records"), f)
+
+print("FAISS index built")
