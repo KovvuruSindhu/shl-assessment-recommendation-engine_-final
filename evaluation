@@ -1,0 +1,17 @@
+import pandas as pd
+from api.app import recommend, Query
+
+train = pd.read_excel("data/train.xlsx")
+
+def recall_at_10(preds, actual):
+    return len(set(preds) & set(actual)) / len(actual)
+
+scores = []
+
+for _, row in train.iterrows():
+    preds = recommend(Query(query=row["query"]))
+    pred_urls = [p["assessment_url"] for p in preds]
+    actual = row["relevant_urls"].split(",")
+    scores.append(recall_at_10(pred_urls, actual))
+
+print("Mean Recall@10:", sum(scores) / len(scores))
